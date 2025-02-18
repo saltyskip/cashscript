@@ -108,9 +108,9 @@ export const debugTemplate = (template: WalletTemplate, artifact: Artifact): Deb
 };
 
 type VM = AuthenticationVirtualMachine<
-ResolvedTransactionCommon,
-AuthenticationProgramCommon,
-AuthenticationProgramStateCommon
+  ResolvedTransactionCommon,
+  AuthenticationProgramCommon,
+  AuthenticationProgramStateCommon
 >;
 type Program = AuthenticationProgramCommon;
 type CreateProgramResult = { vm: VM, program: Program };
@@ -121,11 +121,21 @@ const createProgram = (template: WalletTemplate): CreateProgramResult => {
   const vm = createVirtualMachineBch2025();
   const compiler = createCompiler(configuration);
 
+  const unlockScriptId = Object.keys(template.scripts).find(key => key.includes('unlock'));
+  if (!unlockScriptId) {
+    throw new Error('No unlock script found in template');
+  }
+
+  const evaluateScenarioId = Object.keys(template?.scenarios ?? {}).find(key => key.endsWith('_evaluate'));
+  if (!evaluateScenarioId) {
+    throw new Error('No evaluate function scenario found in template');
+  }
+
   const scenarioGeneration = compiler.generateScenario({
     debug: true,
     lockingScriptId: undefined,
-    unlockingScriptId: 'unlock_lock',
-    scenarioId: 'evaluate_function',
+    unlockingScriptId: unlockScriptId,
+    scenarioId: evaluateScenarioId,
   });
 
   if (typeof scenarioGeneration === 'string') {
